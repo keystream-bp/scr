@@ -1,0 +1,509 @@
+--// Dịch vụ Roblox
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+local Camera = Workspace.CurrentCamera
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+--// Tạo ScreenGui chính
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "PVKA_RayfieldHub"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+--====================================================================--
+-- 1. HỆ THỐNG THÔNG BÁO CHÀO MỪNG (NOTIFICATION "PVKA HUB✨")
+--====================================================================--
+local function showNotification(title, text, duration)
+	local notifGui = Instance.new("Frame")
+	notifGui.Size = UDim2.new(0, 300, 0, 75)
+	notifGui.Position = UDim2.new(1, 20, 0, 20) -- Bắt đầu từ ngoài màn hình bên phải
+	notifGui.AnchorPoint = Vector2.new(1, 0)
+	notifGui.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+	notifGui.BorderSizePixel = 0
+	notifGui.Parent = screenGui
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = notifGui
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Color3.fromRGB(60, 60, 80)
+	stroke.Thickness = 1.5
+	stroke.Parent = notifGui
+
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, -20, 0, 25)
+	titleLabel.Position = UDim2.new(0, 12, 0, 8)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Text = title
+	titleLabel.TextColor3 = Color3.fromRGB(130, 130, 255)
+	titleLabel.TextSize = 15
+	titleLabel.Font = Enum.Font.GothamBold
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.Parent = notifGui
+
+	local descLabel = Instance.new("TextLabel")
+	descLabel.Size = UDim2.new(1, -20, 0, 30)
+	descLabel.Position = UDim2.new(0, 12, 0, 33)
+	descLabel.BackgroundTransparency = 1
+	descLabel.Text = text
+	descLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+	descLabel.TextSize = 13
+	descLabel.Font = Enum.Font.Gotham
+	descLabel.TextXAlignment = Enum.TextXAlignment.Left
+	descLabel.Parent = notifGui
+
+	-- Hiệu ứng trượt vào
+	TweenService:Create(notifGui, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+		Position = UDim2.new(1, -20, 0, 20)
+	}):Play()
+
+	task.delay(duration or 4, function()
+		if notifGui and notifGui.Parent then
+			TweenService:Create(notifGui, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+				Position = UDim2.new(1, 350, 0, 20)
+			}):Play()
+			task.wait(0.3)
+			notifGui:Destroy()
+		end
+	end)
+end
+
+-- Kích hoạt thông báo chào mừng chuẩn phong cách Rayfield
+task.delay(0.5, function()
+	showNotification("PVKA HUB✨", "Đã khởi chạy thành công hệ thống Rayfield UI!", 4)
+end)
+
+--====================================================================--
+-- 2. NÚT MỞ/ĐÓNG GIAO DIỆN (FLOAT ICON)
+--====================================================================--
+local toggleButton = Instance.new("TextButton")
+toggleButton.Size = UDim2.new(0, 48, 0, 48)
+toggleButton.Position = UDim2.new(0, 25, 0, 25)
+toggleButton.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+toggleButton.Text = "⚡"
+toggleButton.TextSize = 20
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.Parent = screenGui
+
+local toggleCorner = Instance.new("UICorner")
+toggleCorner.CornerRadius = UDim.new(1, 0)
+toggleCorner.Parent = toggleButton
+
+local toggleStroke = Instance.new("UIStroke")
+toggleStroke.Color = Color3.fromRGB(70, 70, 90)
+toggleStroke.Thickness = 1.5
+toggleStroke.Parent = toggleButton
+
+--====================================================================--
+-- 3. KHUNG MENU CHÍNH (CHUẨN RAYFIELD THEME)
+--====================================================================--
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 520, 0, 360)
+mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+mainFrame.Position = UDim2.new(0.5, 0, 1.5, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+mainFrame.BorderSizePixel = 0
+mainFrame.ClipsDescendants = true
+mainFrame.Visible = false
+mainFrame.Parent = screenGui
+
+local menuCorner = Instance.new("UICorner")
+menuCorner.CornerRadius = UDim.new(0, 12)
+menuCorner.Parent = mainFrame
+
+local menuStroke = Instance.new("UIStroke")
+menuStroke.Color = Color3.fromRGB(45, 45, 55)
+menuStroke.Thickness = 1.5
+menuStroke.Parent = mainFrame
+
+-- Thanh tiêu đề
+local titleBar = Instance.new("Frame")
+titleBar.Size = UDim2.new(1, 0, 0, 45)
+titleBar.BackgroundTransparency = 1
+titleBar.Parent = mainFrame
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, -90, 1, 0)
+titleLabel.Position = UDim2.new(0, 18, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "PVKA HUB✨  —  Bảng Điều Khiển"
+titleLabel.TextColor3 = Color3.fromRGB(240, 240, 255)
+titleLabel.TextSize = 15
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = titleBar
+
+-- Nút Đóng (✕)
+local closeButton = Instance.new("TextButton")
+closeButton.Size = UDim2.new(0, 28, 0, 28)
+closeButton.Position = UDim2.new(1, -38, 0, 8)
+closeButton.BackgroundColor3 = Color3.fromRGB(40, 20, 20)
+closeButton.Text = "✕"
+closeButton.TextColor3 = Color3.fromRGB(255, 100, 100)
+closeButton.TextSize = 13
+closeButton.Font = Enum.Font.GothamBold
+closeButton.Parent = titleBar
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 6)
+closeCorner.Parent = closeButton
+
+-- Nút Thu Nhỏ (-) / Phóng to (+)
+local minimizeButton = Instance.new("TextButton")
+minimizeButton.Size = UDim2.new(0, 28, 0, 28)
+minimizeButton.Position = UDim2.new(1, -72, 0, 8)
+minimizeButton.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+minimizeButton.Text = "-"
+minimizeButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+minimizeButton.TextSize = 16
+minimizeButton.Font = Enum.Font.GothamBold
+minimizeButton.Parent = titleBar
+
+local minimizeCorner = Instance.new("UICorner")
+minimizeCorner.CornerRadius = UDim.new(0, 6)
+minimizeCorner.Parent = minimizeButton
+
+-- Thanh chứa Tab (Bên trái hoặc phía trên tùy chỉnh)
+local tabBar = Instance.new("ScrollingFrame")
+tabBar.Size = UDim2.new(1, -30, 0, 38)
+tabBar.Position = UDim2.new(0, 15, 0, 50)
+tabBar.BackgroundTransparency = 1
+tabBar.CanvasSize = UDim2.new(0, 450, 0, 0)
+tabBar.ScrollBarThickness = 0
+tabBar.Parent = mainFrame
+
+local tabLayout = Instance.new("UIListLayout")
+tabLayout.FillDirection = Enum.FillDirection.Horizontal
+tabLayout.Padding = UDim.new(0, 8)
+tabLayout.Parent = tabBar
+
+-- Khung chứa nội dung chính của các Tab
+local contentContainer = Instance.new("Frame")
+contentContainer.Size = UDim2.new(1, -30, 1, -105)
+contentContainer.Position = UDim2.new(0, 15, 0, 98)
+contentContainer.BackgroundTransparency = 1
+contentContainer.Parent = mainFrame
+
+--====================================================================--
+-- 4. HỆ THỐNG TẠO TAB & GẮN NÚT (TOGGLE) GIAO DIỆN RAYFIELD
+--====================================================================--
+local tabs = {}
+local activeTab = nil
+
+local function createTab(name)
+	local tabBtn = Instance.new("TextButton")
+	tabBtn.Size = UDim2.new(0, 130, 0, 32)
+	tabBtn.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+	tabBtn.Text = name
+	tabBtn.TextColor3 = Color3.fromRGB(150, 150, 170)
+	tabBtn.TextSize = 13
+	tabBtn.Font = Enum.Font.GothamBold
+	tabBtn.Parent = tabBar
+	
+	local btnCorner = Instance.new("UICorner")
+	btnCorner.CornerRadius = UDim.new(0, 6)
+	btnCorner.Parent = tabBtn
+	
+	local page = Instance.new("ScrollingFrame")
+	page.Size = UDim2.new(1, 0, 1, 0)
+	page.BackgroundTransparency = 1
+	page.Visible = false
+	page.CanvasSize = UDim2.new(0, 0, 0, 600)
+	page.ScrollBarThickness = 3
+	page.Parent = contentContainer
+	
+	local pageLayout = Instance.new("UIListLayout")
+	pageLayout.Padding = UDim.new(0, 8)
+	pageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	pageLayout.Parent = page
+	
+	tabBtn.MouseButton1Click:Connect(function()
+		for _, t in pairs(tabs) do
+			t.Btn.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+			t.Btn.TextColor3 = Color3.fromRGB(150, 150, 170)
+			t.Page.Visible = false
+		end
+		tabBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 180)
+		tabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+		page.Visible = true
+	end)
+	
+	if not activeTab then
+		tabBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 180)
+		tabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+		page.Visible = true
+		activeTab = tabBtn
+	end
+	
+	table.insert(tabs, {Btn = tabBtn, Page = page})
+	return page
+end
+
+local function createToggle(parentPage, text, callback)
+	local toggleFrame = Instance.new("Frame")
+	toggleFrame.Size = UDim2.new(1, -5, 0, 42)
+	toggleFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+	toggleFrame.Parent = parentPage
+	
+	local tCorner = Instance.new("UICorner")
+	tCorner.CornerRadius = UDim.new(0, 8)
+	tCorner.Parent = toggleFrame
+	
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, -65, 1, 0)
+	label.Position = UDim2.new(0, 14, 0, 0)
+	label.BackgroundTransparency = 1
+	label.Text = text
+	label.TextColor3 = Color3.fromRGB(220, 220, 230)
+	label.TextSize = 13
+	label.Font = Enum.Font.GothamMedium
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.Parent = toggleFrame
+	
+	local switch = Instance.new("TextButton")
+	switch.Size = UDim2.new(0, 40, 0, 22)
+	switch.Position = UDim2.new(1, -50, 0.5, -11)
+	switch.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+	switch.Text = ""
+	switch.Parent = toggleFrame
+	
+	local sCorner = Instance.new("UICorner")
+	sCorner.CornerRadius = UDim.new(1, 0)
+	sCorner.Parent = switch
+	
+	local circle = Instance.new("Frame")
+	circle.Size = UDim2.new(0, 16, 0, 16)
+	circle.Position = UDim2.new(0, 3, 0.5, -8)
+	circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	circle.Parent = switch
+	
+	local cCorner = Instance.new("UICorner")
+	cCorner.CornerRadius = UDim.new(1, 0)
+	cCorner.Parent = circle
+	
+	local enabled = false
+	switch.MouseButton1Click:Connect(function()
+		enabled = not enabled
+		if enabled then
+			TweenService:Create(switch, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(80, 100, 255)}):Play()
+			TweenService:Create(circle, TweenInfo.new(0.2), {Position = UDim2.new(1, -19, 0.5, -8)}):Play()
+		else
+			TweenService:Create(switch, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(45, 45, 55)}):Play()
+			TweenService:Create(circle, TweenInfo.new(0.2), {Position = UDim2.new(0, 3, 0.5, -8)}):Play()
+		end
+		callback(enabled)
+	end)
+end
+
+--====================================================================--
+-- 5. TẠO TAB ESP VÀ LOGIC HOẠT ĐỘNG
+--====================================================================--
+local tabESP = createTab("🎯 ESP Tính Năng")
+local tabSettings = createTab("⚙️ Cài Đặt Chung")
+
+local eggEspEnabled = false
+local playerEspEnabled = false
+local eggObjects = {}
+local playerObjects = {}
+
+local function createEggESP(item)
+	local box = Drawing.new("Square")
+	box.Visible = false
+	box.Color = Color3.fromRGB(0, 255, 255)
+	box.Thickness = 1.5
+	box.Filled = false
+	local text = Drawing.new("Text")
+	text.Visible = false
+	text.Color = Color3.fromRGB(255, 255, 255)
+	text.Size = 13
+	text.Center = true
+	text.Outline = true
+	eggObjects[item] = {Box = box, Text = text}
+end
+
+local function createPlayerESP(p)
+	local box = Drawing.new("Square")
+	box.Visible = false
+	box.Color = Color3.fromRGB(255, 60, 60)
+	box.Thickness = 1.5
+	box.Filled = false
+	local text = Drawing.new("Text")
+	text.Visible = false
+	text.Color = Color3.fromRGB(255, 255, 255)
+	text.Size = 13
+	text.Center = true
+	text.Outline = true
+	playerObjects[p] = {Box = box, Text = text}
+end
+
+Players.PlayerRemoving:Connect(function(p)
+	if playerObjects[p] then
+		if playerObjects[p].Box then playerObjects[p].Box:Remove() end
+		if playerObjects[p].Text then playerObjects[p].Text:Remove() end
+		playerObjects[p] = nil
+	end
+end)
+
+RunService.RenderStepped:Connect(function()
+	if eggEspEnabled then
+		for _, obj in pairs(Workspace:GetDescendants()) do
+			if obj:IsA("Model") or obj:IsA("Part") then
+				if string.find(string.lower(obj.Name), "egg") then
+					if not eggObjects[obj] then createEggESP(obj) end
+					local tp = obj:IsA("Model") and obj.PrimaryPart or obj
+					if not tp and obj:IsA("Model") then tp = obj:FindFirstChildWhichIsA("BasePart") end
+					if tp then
+						local vec, onScreen = Camera:WorldToViewportPoint(tp.Position)
+						local objs = eggObjects[obj]
+						if onScreen and objs then
+							local dist = (Camera.CFrame.Position - tp.Position).Magnitude
+							local sf = math.clamp(1200 / dist, 12, 350)
+							objs.Box.Size = Vector2.new(sf * 0.8, sf)
+							objs.Box.Position = Vector2.new(vec.X - objs.Box.Size.X / 2, vec.Y - objs.Box.Size.Y / 2)
+							objs.Box.Visible = true
+							objs.Text.Text = obj.Name .. " [" .. math.floor(dist) .. "m]"
+							objs.Text.Position = Vector2.new(vec.X, vec.Y - objs.Box.Size.Y / 2 - 16)
+							objs.Text.Visible = true
+						else
+							if objs then objs.Box.Visible = false; objs.Text.Visible = false end
+						end
+					end
+				end
+			end
+		end
+	else
+		for _, objs in pairs(eggObjects) do
+			if objs.Box then objs.Box.Visible = false end
+			if objs.Text then objs.Text.Visible = false end
+		end
+	end
+
+	if playerEspEnabled then
+		for _, plr in pairs(Players:GetPlayers()) do
+			if plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+				if not playerObjects[plr] then createPlayerESP(plr) end
+				local hrp = plr.Character.HumanoidRootPart
+				local vec, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+				local objs = playerObjects[plr]
+				if onScreen and objs then
+					local dist = (Camera.CFrame.Position - hrp.Position).Magnitude
+					local sf = math.clamp(1200 / dist, 20, 350)
+					objs.Box.Size = Vector2.new(sf * 0.6, sf * 1.2)
+					objs.Box.Position = Vector2.new(vec.X - objs.Box.Size.X / 2, vec.Y - objs.Box.Size.Y / 2)
+					objs.Box.Visible = true
+					objs.Text.Text = plr.Name .. " [" .. math.floor(dist) .. "m]"
+					objs.Text.Position = Vector2.new(vec.X, vec.Y - objs.Box.Size.Y / 2 - 16)
+					objs.Text.Visible = true
+				else
+					if objs then objs.Box.Visible = false; objs.Text.Visible = false end
+				end
+			end
+		end
+	else
+		for _, objs in pairs(playerObjects) do
+			if objs.Box then objs.Box.Visible = false end
+			if objs.Text then objs.Text.Visible = false end
+		end
+	end
+end)
+
+-- Gắn các chức năng Toggle vào Tab ESP
+createToggle(tabESP, "ESP Trứng (Hộp & Tên)", function(v) eggEspEnabled = v end)
+createToggle(tabESP, "ESP Người Chơi", function(v) playerEspEnabled = v end)
+
+-- Tab Cài đặt mẫu
+local descLabel = Instance.new("TextLabel")
+descLabel.Size = UDim2.new(1, 0, 0, 50)
+descLabel.BackgroundTransparency = 1
+descLabel.Text = "Giao diện Rayfield UI chuẩn của PVKA HUB.\nHỗ trợ kéo thả linh hoạt và hiệu ứng chuyển động mượt mà."
+descLabel.TextColor3 = Color3.fromRGB(160, 160, 180)
+descLabel.TextSize = 13
+descLabel.Font = Enum.Font.Gotham
+descLabel.TextWrapped = true
+descLabel.Parent = tabSettings
+
+--====================================================================--
+-- 6. KÉO THẢ & HIỆN / ĐÓNG / THU NHỎ MENU
+--====================================================================--
+local dragging, dragInput, dragStart, startPos
+
+titleBar.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = mainFrame.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then dragging = false end
+		end)
+	end
+end)
+
+titleBar.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		local delta = input.Position - dragStart
+		mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	end
+end)
+
+local isMenuOpen = false
+local isMinimized = false
+local fullSize = UDim2.new(0, 520, 0, 360)
+local minSize = UDim2.new(0, 520, 0, 45)
+
+local function openMenu()
+	if isMenuOpen then return end
+	isMenuOpen = true
+	isMinimized = false
+	minimizeButton.Text = "-"
+	mainFrame.Visible = true
+	mainFrame.Size = fullSize
+	mainFrame.Position = UDim2.new(0.5, 0, 1.5, 0)
+	TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+		Position = UDim2.new(0.5, 0, 0.5, 0)
+	}):Play()
+end
+
+local function closeMenu()
+	if not isMenuOpen then return end
+	isMenuOpen = false
+	TweenService:Create(mainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+		Position = UDim2.new(0.5, 0, -0.5, 0)
+	}):Play()
+	task.wait(0.25)
+	if not isMenuOpen then mainFrame.Visible = false end
+end
+
+local function toggleMinimize()
+	if not isMenuOpen then return end
+	if isMinimized then
+		isMinimized = false
+		minimizeButton.Text = "-"
+		TweenService:Create(mainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = fullSize}):Play()
+	else
+		isMinimized = true
+		minimizeButton.Text = "+"
+		TweenService:Create(mainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = minSize}):Play()
+	end
+end
+
+toggleButton.MouseButton1Click:Connect(function()
+	if isMenuOpen then closeMenu() else openMenu() end
+end)
+closeButton.MouseButton1Click:Connect(closeMenu)
+minimizeButton.MouseButton1Click:Connect(toggleMinimize)
+
+-- Tự động bật menu sau khi chạy xong thông báo intro
+task.delay(1.5, openMenu)
+
