@@ -1,0 +1,308 @@
+--// Dịch vụ cần thiết
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+--// Tạo ScreenGui chính
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "PVKA_AnimatedMenu"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+--====================================================================--
+-- 1. MÀN HÌNH INTRO (HIỆN CHỮ "PVKA" VÀ CHẤM TRÒN XOAY)
+--====================================================================--
+local introHolder = Instance.new("Frame")
+introHolder.Name = "IntroHolder"
+introHolder.Size = UDim2.new(1, 0, 1, 0)
+introHolder.BackgroundTransparency = 1
+introHolder.Parent = screenGui
+
+-- Chữ PVKA
+local pvkaLabel = Instance.new("TextLabel")
+pvkaLabel.Name = "PVKALabel"
+pvkaLabel.Size = UDim2.new(0, 300, 0, 100)
+pvkaLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+pvkaLabel.Position = UDim2.new(0.5, 0, 0.5, 0)
+pvkaLabel.BackgroundTransparency = 1
+pvkaLabel.Text = "PVKA"
+pvkaLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+pvkaLabel.TextSize = 50
+pvkaLabel.Font = Enum.Font.FredokaOne
+pvkaLabel.TextTransparency = 1
+pvkaLabel.Parent = introHolder
+
+-- Tạo các chấm tròn loading xoay vòng quanh
+local dots = {}
+local numDots = 8
+local radius = 45
+
+for i = 1, numDots do
+	local dot = Instance.new("Frame")
+	dot.Size = UDim2.new(0, 10, 0, 10)
+	dot.AnchorPoint = Vector2.new(0.5, 0.5)
+	dot.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+	dot.BackgroundTransparency = 1
+	
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(1, 0)
+	corner.Parent = dot
+	
+	dot.Parent = introHolder
+	table.insert(dots, dot)
+end
+
+-- Hiệu ứng quay vòng của các chấm tròn
+local rotConn
+local angle = 0
+rotConn = RunService.RenderStepped:Connect(function(dt)
+	angle = angle + dt * 3
+	for i, dot in ipairs(dots) do
+		local theta = angle + (i * (math.pi * 2 / numDots))
+		local x = math.cos(theta) * radius
+		local y = math.sin(theta) * radius
+		dot.Position = UDim2.new(0.5, x, 0.5, y)
+	end
+end)
+
+-- Chạy hiệu ứng Intro xuất hiện chữ và chấm tròn
+TweenService:Create(pvkaLabel, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
+for _, dot in ipairs(dots) do
+	TweenService:Create(dot, TweenInfo.new(0.6), {BackgroundTransparency = 0}):Play()
+end
+
+task.wait(1.8)
+
+-- Hiệu ứng tắt Intro
+TweenService:Create(pvkaLabel, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {TextTransparency = 1}):Play()
+for _, dot in ipairs(dots) do
+	TweenService:Create(dot, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
+end
+task.wait(0.5)
+
+if rotConn then rotConn:Disconnect() end
+introHolder:Destroy()
+
+--====================================================================--
+-- 2. GIAO DIỆN CHÍNH (MENU TO HƠN & NÚT THU NHỎ / ĐÓNG)
+--====================================================================--
+
+-- Nút tròn bật/tắt menu ở góc màn hình
+local toggleButton = Instance.new("TextButton")
+toggleButton.Name = "ToggleButton"
+toggleButton.Size = UDim2.new(0, 50, 0, 50)
+toggleButton.Position = UDim2.new(0, 20, 0, 20)
+toggleButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+toggleButton.Text = "⚙️"
+toggleButton.TextSize = 22
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.Parent = screenGui
+
+local toggleCorner = Instance.new("UICorner")
+toggleCorner.CornerRadius = UDim.new(1, 0)
+toggleCorner.Parent = toggleButton
+
+-- Khung Menu Chính (Đã làm TO HƠN: 450x320)
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 450, 0, 320)
+mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+mainFrame.Position = UDim2.new(0.5, 0, 1.5, 0) -- Ban đầu ở dưới màn hình
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+mainFrame.BorderSizePixel = 0
+mainFrame.ClipsDescendants = true -- Ẩn các phần nội dung tràn ra khi thu nhỏ
+mainFrame.Visible = false
+mainFrame.Parent = screenGui
+
+local menuCorner = Instance.new("UICorner")
+menuCorner.CornerRadius = UDim.new(0, 16)
+menuCorner.Parent = mainFrame
+
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(60, 60, 60)
+stroke.Thickness = 2
+stroke.Parent = mainFrame
+
+-- Tiêu đề Menu
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, -90, 0, 60)
+titleLabel.Position = UDim2.new(0, 20, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "⚡ PVKA MENU CHÍNH ⚡"
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.TextSize = 20
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = mainFrame
+
+-- Nút Đóng (✕)
+local closeButton = Instance.new("TextButton")
+closeButton.Size = UDim2.new(0, 32, 0, 32)
+closeButton.Position = UDim2.new(1, -42, 0, 14)
+closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+closeButton.Text = "✕"
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.TextSize = 14
+closeButton.Font = Enum.Font.GothamBold
+closeButton.Parent = mainFrame
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 8)
+closeCorner.Parent = closeButton
+
+-- Nút Thu Nhỏ (-) / Phóng to (+)
+local minimizeButton = Instance.new("TextButton")
+minimizeButton.Size = UDim2.new(0, 32, 0, 32)
+minimizeButton.Position = UDim2.new(1, -80, 0, 14)
+minimizeButton.BackgroundColor3 = Color3.fromRGB(200, 150, 40)
+minimizeButton.Text = "-"
+minimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+minimizeButton.TextSize = 18
+minimizeButton.Font = Enum.Font.GothamBold
+minimizeButton.Parent = mainFrame
+
+local minimizeCorner = Instance.new("UICorner")
+minimizeCorner.CornerRadius = UDim.new(0, 8)
+minimizeCorner.Parent = minimizeButton
+
+-- Nội dung bên trong menu (Phần thân)
+local contentHolder = Instance.new("Frame")
+contentHolder.Name = "ContentHolder"
+contentHolder.Size = UDim2.new(1, 0, 1, -60)
+contentHolder.Position = UDim2.new(0, 0, 0, 60)
+contentHolder.BackgroundTransparency = 1
+contentHolder.Parent = mainFrame
+
+local descLabel = Instance.new("TextLabel")
+descLabel.Size = UDim2.new(1, -40, 0, 120)
+descLabel.Position = UDim2.new(0, 20, 0, 30)
+descLabel.BackgroundTransparency = 1
+descLabel.Text = "Giao diện menu phiên bản lớn.\nBạn có thể ấn nút trừ (-) phía trên để thu gọn lại chỉ còn đúng 1 hàng tên menu, và ấn lại để mở ra!"
+descLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+descLabel.TextSize = 16
+descLabel.Font = Enum.Font.Gotham
+descLabel.TextWrapped = true
+descLabel.Parent = contentHolder
+
+--====================================================================--
+-- 3. TÍNH NĂNG KÉO THẢ MENU (DRAGGABLE)
+--====================================================================--
+local dragging, dragInput, dragStart, startPos
+
+titleLabel.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = mainFrame.Position
+		
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+titleLabel.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		local delta = input.Position - dragStart
+		mainFrame.Position = UDim2.new(
+			startPos.X.Scale, 
+			startPos.X.Offset + delta.X, 
+			startPos.Y.Scale, 
+			startPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+--====================================================================--
+-- 4. HIỆU ỨNG ĐÓNG, MỞ & THU NHỎ / PHÓNG TO MENU
+--====================================================================--
+local isMenuOpen = false
+local isMinimized = false
+
+local fullSize = UDim2.new(0, 450, 0, 320)
+local minSize = UDim2.new(0, 450, 0, 60) -- Chỉ cao đúng 1 hàng tiêu đề
+
+local function openMenu()
+	if isMenuOpen then return end
+	isMenuOpen = true
+	isMinimized = false
+	minimizeButton.Text = "-"
+	
+	mainFrame.Visible = true
+	mainFrame.Size = fullSize
+	mainFrame.Position = UDim2.new(0.5, 0, 1.5, 0)
+	
+	-- Trượt từ dưới lên giữa màn hình nhanh chóng
+	TweenService:Create(mainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+		Position = UDim2.new(0.5, 0, 0.5, 0)
+	}):Play()
+end
+
+local function closeMenu()
+	if not isMenuOpen then return end
+	isMenuOpen = false
+	
+	-- Trượt vụt lên phía trên màn hình khi đóng
+	TweenService:Create(mainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+		Position = UDim2.new(0.5, 0, -0.5, 0)
+	}):Play()
+	
+	task.wait(0.25)
+	if not isMenuOpen then
+		mainFrame.Visible = false
+	end
+end
+
+local function toggleMinimize()
+	if not isMenuOpen then return end
+	
+	if isMinimized then
+		-- Phóng to ra lại kích thước đầy đủ
+		isMinimized = false
+		minimizeButton.Text = "-"
+		TweenService:Create(mainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			Size = fullSize
+		}):Play()
+	else
+		-- Thu nhỏ lại chỉ còn đúng 1 hàng tiêu đề
+		isMinimized = true
+		minimizeButton.Text = "+"
+		TweenService:Create(mainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			Size = minSize
+		}):Play()
+	end
+end
+
+-- Gắn sự kiện click
+toggleButton.MouseButton1Click:Connect(function()
+	if isMenuOpen then
+		closeMenu()
+	else
+		openMenu()
+	end
+end)
+
+closeButton.MouseButton1Click:Connect(function()
+	closeMenu()
+end)
+
+minimizeButton.MouseButton1Click:Connect(function()
+	toggleMinimize()
+end)
+
+-- Tự động bật menu sau khi chạy xong màn hình Intro
+task.delay(2.3, function()
+	openMenu()
+end)
